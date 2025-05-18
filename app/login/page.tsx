@@ -1,50 +1,88 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Formik, Form, Field, ErrorMessage } from "formik";
+import * as Yup from "yup";
+import { authAPI } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Brain } from "lucide-react";
 
-import { useState } from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Brain } from "lucide-react"
+// Define validation schema using Yup
+const LoginSchema = Yup.object().shape({
+  email: Yup.string()
+    .matches(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "Invalid email format")
+    .required("Email is required"),
+  password: Yup.string().required("Password is required"),
+});
 
 export default function LoginPage() {
-  const router = useRouter()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
+  const router = useRouter();
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError("")
-
-    // For demo purposes, we'll simulate a successful login
-    // In a real app, you would make an API call to authenticate
-    console.log("Login attempt with:", { email, password })
+  const handleLogin = async (
+    values: any,
+    { setSubmitting, setStatus }: any
+  ) => {
+    setStatus(null);
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      // Prepare data for API
+      const userData = {
+        email: values.email,
+        password: values.password,
+      };
 
-      // For demo, we'll accept any email with a password longer than 5 chars
-      if (password.length < 6) {
-        throw new Error("Invalid credentials")
+      // Send login request to external backend
+      const response = await authAPI.login(userData);
+
+      console.log("Login successful:", response.data);
+
+      // Store authentication data if the API returns a token
+      if (response.data.token.accessToken) {
+        localStorage.setItem("token", response.data.token.accessToken);
+
+        // Optionally store user info if it's returned
+        if (response.data.user) {
+          localStorage.setItem("user", JSON.stringify(response.data.user));
+        }
       }
 
-      console.log("Login successful")
-      router.push("/profile")
-    } catch (err) {
-      console.error("Login failed:", err)
-      setError("Invalid email or password. Please try again.")
+      // Redirect to profile page on successful login
+      router.push("/profile");
+    } catch (err: any) {
+      console.log("Login failed:", err);
+
+      // Display appropriate error message
+      if (err.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        setStatus(
+          err.response.data.message || "Login failed. Please try again."
+        );
+      } else if (err.request) {
+        // The request was made but no response was received
+        setStatus(
+          "No response from server. Please check your connection and try again."
+        );
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        setStatus("An error occurred during login. Please try again.");
+      }
     } finally {
-      setIsLoading(false)
+      setSubmitting(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -65,42 +103,79 @@ export default function LoginPage() {
         <div className="w-full max-w-md px-4">
           <Card>
             <CardHeader className="space-y-1">
-              <CardTitle className="text-2xl font-bold text-center">Login</CardTitle>
-              <CardDescription className="text-center">Enter your credentials to access your account</CardDescription>
+              <CardTitle className="text-2xl font-bold text-center">
+                Log In
+              </CardTitle>
+              <CardDescription className="text-center">
+                Enter your credentials to access your account
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleLogin} className="space-y-4">
-                {error && <div className="p-3 rounded-md bg-red-50 text-red-500 text-sm">{error}</div>}
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="your.email@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="password">Password</Label>
-                    <Link href="/forgot-password" className="text-sm text-primary hover:underline">
-                      Forgot password?
-                    </Link>
-                  </div>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Logging in..." : "Login"}
-                </Button>
-              </form>
+              <Formik
+                initialValues={{
+                  email: "",
+                  password: "",
+                }}
+                validationSchema={LoginSchema}
+                onSubmit={handleLogin}
+                // Disable browser validation
+                validateOnChange={true}
+                validateOnBlur={true}
+              >
+                {({ isSubmitting, status, errors, touched }) => (
+                  <Form className="space-y-4" noValidate>
+                    {status && (
+                      <div className="p-3 rounded-md bg-red-50 text-red-500 text-sm">
+                        {status}
+                      </div>
+                    )}
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Field
+                        as={Input}
+                        id="email"
+                        name="email"
+                        type="email"
+                        placeholder="your.email@example.com"
+                      />
+                      <ErrorMessage
+                        name="email"
+                        component="div"
+                        className="text-red-500 text-sm mt-1"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Password</Label>
+                      <Field
+                        as={Input}
+                        id="password"
+                        name="password"
+                        type="password"
+                      />
+                      <ErrorMessage
+                        name="password"
+                        component="div"
+                        className="text-red-500 text-sm mt-1"
+                      />
+                    </div>
+                    <div className="flex items-center justify-end">
+                      <Link
+                        href="/forgot-password"
+                        className="text-sm text-primary hover:underline"
+                      >
+                        Forgot password?
+                      </Link>
+                    </div>
+                    <Button
+                      type="submit"
+                      className="w-full"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? "Logging in..." : "Log In"}
+                    </Button>
+                  </Form>
+                )}
+              </Formik>
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
               <div className="text-center text-sm">
@@ -108,22 +183,6 @@ export default function LoginPage() {
                 <Link href="/signup" className="text-primary hover:underline">
                   Sign up
                 </Link>
-              </div>
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <Button variant="outline" type="button">
-                  Google
-                </Button>
-                <Button variant="outline" type="button">
-                  GitHub
-                </Button>
               </div>
             </CardFooter>
           </Card>
@@ -142,5 +201,5 @@ export default function LoginPage() {
         </div>
       </footer>
     </div>
-  )
+  );
 }
