@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
+import { authAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -49,16 +50,50 @@ export default function SignUpPage() {
     setStatus(null);
 
     try {
-      // Simulate API call
-      console.log("Signup attempt with:", values);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Prepare data for API
+      const userData = {
+        firstname: values.firstName,
+        lastname: values.lastName,
+        email: values.email,
+        password: values.password,
+      };
 
-      // For demo, we'll just proceed with the sign up
-      console.log("Signup successful");
+      // Send signup request to external backend
+      const response = await authAPI.signUp(userData);
+
+      console.log("Signup successful:", response.data);
+
+      // Store authentication data if the API returns a token
+      if (response.data.token) {
+        localStorage.setItem("token", response.data.token);
+
+        // Optionally store user info if it's returned
+        if (response.data.user) {
+          localStorage.setItem("user", JSON.stringify(response.data.user));
+        }
+      }
+
+      // Redirect to profile page on successful signup
       router.push("/profile");
-    } catch (err) {
+    } catch (err: any) {
       console.error("Signup failed:", err);
-      setStatus("An error occurred during sign up. Please try again.");
+
+      // Display appropriate error message
+      if (err.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        setStatus(
+          err.response.data.message || "Sign up failed. Please try again."
+        );
+      } else if (err.request) {
+        // The request was made but no response was received
+        setStatus(
+          "No response from server. Please check your connection and try again."
+        );
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        setStatus("An error occurred during sign up. Please try again.");
+      }
     } finally {
       setSubmitting(false);
     }

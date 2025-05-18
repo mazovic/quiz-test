@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Brain } from "lucide-react"
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Brain } from "lucide-react";
 
 export default function Header() {
   return (
@@ -14,7 +14,7 @@ export default function Header() {
         </div>
         <nav className="hidden md:flex gap-6">
           <Link href="/" className="font-medium hover:text-primary">
-            Home 
+            Home
           </Link>
           <Link href="/categories" className="font-medium hover:text-primary">
             Categories
@@ -38,5 +38,5 @@ export default function Header() {
         </div>
       </div>
     </header>
-  )
+  );
 }
