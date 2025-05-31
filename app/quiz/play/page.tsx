@@ -14,26 +14,18 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Brain, Clock, ArrowRight, CheckCircle, XCircle } from "lucide-react";
-import { generateQuestions } from "@/lib/quiz-generator";
 import type { Question } from "@/lib/types";
+import { quizAPI } from "@/lib/api";
 
 export default function PlayQuizPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const leveling = Number.parseInt(searchParams.get("level") || "0", 2);
-  let category = searchParams.get("category") || "cpp";
+  let subCategoryId = searchParams.get("subCategoryId") || null;
   let difficulty = searchParams.get("difficulty") || "medium";
-  let count = Number.parseInt(searchParams.get("count") || "10", 10);
-  let timeLimit = Number.parseInt(searchParams.get("time") || "60", 10);
-
-  if (leveling) {
-    category = "Problem Solving";
-    count = 15;
-    difficulty = "Leveling";
-  }
-
-  const [questions, setQuestions] = useState<Question[]>([]);
+  let count = Number.parseInt(searchParams.get("questionCount") || "10", 10);
+  let timeLimit = Number.parseInt(searchParams.get("timeLimit") || "60", 10);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
@@ -41,6 +33,14 @@ export default function PlayQuizPage() {
   const [timeRemaining, setTimeRemaining] = useState(timeLimit);
   const [quizCompleted, setQuizCompleted] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [category, setCategory] = useState<string>("Problem Solving");
+
+  if (leveling) {
+    count = 15;
+    difficulty = "Leveling";
+  }
+
+  const [questions, setQuestions] = useState<Question[]>([]);
 
   // Generate questions on component mount
   useEffect(() => {
@@ -50,15 +50,20 @@ export default function PlayQuizPage() {
         setLoading(false);
       }, 1000);
       try {
-        const generatedQuestions = await generateQuestions(
-          leveling,
-          category,
-          difficulty,
-          count
-        );
-        console.log({ generatedQuestions });
+        if (subCategoryId) {
+          const generatedQuestions = await quizAPI.getQuiz(
+            subCategoryId,
+            difficulty,
+            count
+          );
+          console.log({ generatedQuestions });
 
-        setQuestions(generatedQuestions);
+          setQuestions(generatedQuestions.data.data);
+        } else {
+          const generatedQuestions = await quizAPI.getLevelingQuiz();
+          console.log({ generatedQuestions });
+          setQuestions(generatedQuestions.data.data);
+        }
       } catch (error) {
         console.log("Failed to generate questions:", { error });
       } finally {

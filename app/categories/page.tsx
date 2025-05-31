@@ -67,7 +67,7 @@ export default function CategoriesPage() {
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <Brain className="h-16 w-16 text-primary mx-auto animate-pulse" />
-            <h2 className="text-2xl font-bold mt-4">Generating Your Quiz...</h2>
+            <h2 className="text-2xl font-bold mt-4">Loading Categories...</h2>
             <p className="text-muted-foreground mt-2">
               Our AI is crafting challenging questions just for you
             </p>
