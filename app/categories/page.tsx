@@ -27,9 +27,6 @@ const categories = [
     name: "Science",
     description:
       "Test your knowledge of scientific concepts, discoveries, and theories",
-    icon: Atom,
-    color: "bg-green-100 dark:bg-green-900",
-    iconColor: "text-green-500",
     questionCount: 500,
   },
   {
@@ -37,9 +34,6 @@ const categories = [
     name: "Technology",
     description:
       "Challenge yourself with questions about gadgets, innovations, and tech history",
-    icon: Code,
-    color: "bg-purple-100 dark:bg-purple-900",
-    iconColor: "text-purple-500",
     questionCount: 450,
   },
   {
@@ -47,9 +41,6 @@ const categories = [
     name: "History",
     description:
       "Journey through time with questions about historical events and figures",
-    icon: BookOpen,
-    color: "bg-amber-100 dark:bg-amber-900",
-    iconColor: "text-amber-500",
     questionCount: 600,
   },
   {
@@ -57,9 +48,6 @@ const categories = [
     name: "Geography",
     description:
       "Explore the world with questions about countries, landmarks, and natural features",
-    icon: Globe,
-    color: "bg-blue-100 dark:bg-blue-900",
-    iconColor: "text-blue-500",
     questionCount: 400,
   },
   {
@@ -67,18 +55,12 @@ const categories = [
     name: "Entertainment",
     description:
       "Test your knowledge of movies, TV shows, music, and pop culture",
-    icon: Film,
-    color: "bg-red-100 dark:bg-red-900",
-    iconColor: "text-red-500",
     questionCount: 550,
   },
   {
     id: "music",
     name: "Music",
     description: "From classical to contemporary, test your musical knowledge",
-    icon: Music,
-    color: "bg-pink-100 dark:bg-pink-900",
-    iconColor: "text-pink-500",
     questionCount: 350,
   },
   {
@@ -86,9 +68,6 @@ const categories = [
     name: "Sports",
     description:
       "Challenge yourself with questions about athletes, teams, and sporting events",
-    icon: Dumbbell,
-    color: "bg-orange-100 dark:bg-orange-900",
-    iconColor: "text-orange-500",
     questionCount: 480,
   },
   {
@@ -96,9 +75,6 @@ const categories = [
     name: "General Knowledge",
     description:
       "A mix of questions from various categories to test your overall knowledge",
-    icon: Brain,
-    color: "bg-teal-100 dark:bg-teal-900",
-    iconColor: "text-teal-500",
     questionCount: 700,
   },
 ];
@@ -123,11 +99,9 @@ export default function CategoriesPage() {
                   key={category.id}
                   className="overflow-hidden hover:shadow-md transition-shadow"
                 >
-                  <CardHeader className={`${category.color}`}>
+                  <CardHeader className={`bg-purple-100 dark:bg-purple-900`}>
                     <div className="flex justify-between items-start">
-                      <category.icon
-                        className={`h-8 w-8 ${category.iconColor}`}
-                      />
+                      <Code className={`h-8 w-8 text-purple-500`} />
                       <Badge variant="secondary">
                         {category.questionCount}+ Questions
                       </Badge>

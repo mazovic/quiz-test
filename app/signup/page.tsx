@@ -65,7 +65,7 @@ export default function SignUpPage() {
 
       // Store authentication data if the API returns a token
       if (response.data.token) {
-        localStorage.setItem("token", response.data.token);
+        localStorage.setItem("token", response.data.token.accessToken);
 
         // Optionally store user info if it's returned
         if (response.data.user) {

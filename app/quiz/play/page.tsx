@@ -22,10 +22,16 @@ export default function PlayQuizPage() {
   const searchParams = useSearchParams();
 
   const leveling = Number.parseInt(searchParams.get("level") || "0", 2);
-  const category = searchParams.get("category") || "cpp";
-  const difficulty = searchParams.get("difficulty") || "medium";
-  const count = Number.parseInt(searchParams.get("count") || "10", 10);
-  const timeLimit = Number.parseInt(searchParams.get("time") || "60", 10);
+  let category = searchParams.get("category") || "cpp";
+  let difficulty = searchParams.get("difficulty") || "medium";
+  let count = Number.parseInt(searchParams.get("count") || "10", 10);
+  let timeLimit = Number.parseInt(searchParams.get("time") || "60", 10);
+
+  if (leveling) {
+    category = "Problem Solving";
+    count = 15;
+    difficulty = "Leveling";
+  }
 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);

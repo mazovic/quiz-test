@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,8 +19,10 @@ import {
   Trophy,
   Calendar,
   ArrowUpRight,
+  Loader2,
 } from "lucide-react";
 import Layout from "@/components/layout/Layout";
+import { authAPI } from "@/lib/api";
 
 // Mock user data
 const userData = {
@@ -60,6 +62,45 @@ const userData = {
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("overview");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        setLoading(true);
+        // Replace with your actual API endpoint
+        const response: any = await authAPI.authMe();
+
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status}`);
+        }
+
+        console.log(response);
+
+        setLoading(false);
+      } catch (err: any) {
+        console.error("Failed to fetch user data:", err);
+        setError(err.message);
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="flex flex-col items-center gap-2">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            <p className="text-muted-foreground">Loading profile data...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
