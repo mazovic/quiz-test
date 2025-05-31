@@ -15,7 +15,8 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Brain, Clock, ArrowRight, CheckCircle, XCircle } from "lucide-react";
 import type { Question } from "@/lib/types";
-import { quizAPI } from "@/lib/api";
+import { categoryAPI, quizAPI } from "@/lib/api";
+import { SubCategory } from "../new/page";
 
 export default function PlayQuizPage() {
   const router = useRouter();
@@ -34,6 +35,7 @@ export default function PlayQuizPage() {
   const [quizCompleted, setQuizCompleted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState<string>("Problem Solving");
+  const [subCategory, setSubCategory] = useState<SubCategory | null>(null);
 
   if (leveling) {
     count = 15;
@@ -50,6 +52,7 @@ export default function PlayQuizPage() {
         setLoading(false);
       }, 1000);
       try {
+        console.log({ subCategoryId });
         if (subCategoryId) {
           const generatedQuestions = await quizAPI.getQuiz(
             subCategoryId,
@@ -59,6 +62,10 @@ export default function PlayQuizPage() {
           console.log({ generatedQuestions });
 
           setQuestions(generatedQuestions.data.data);
+          const subCategory = (await categoryAPI.getSubCategories()).data.data;
+          setSubCategory(
+            subCategory.find((sub: SubCategory) => sub.id === +subCategoryId)
+          );
         } else {
           const generatedQuestions = await quizAPI.getLevelingQuiz();
           console.log({ generatedQuestions });
@@ -73,6 +80,12 @@ export default function PlayQuizPage() {
 
     loadQuestions();
   }, [category, difficulty, count]);
+
+  useEffect(() => {
+    if (subCategory) {
+      setCategory(`${subCategory.category.name} - ${subCategory.name}`);
+    }
+  }, [subCategory]);
 
   // Timer effect
   useEffect(() => {

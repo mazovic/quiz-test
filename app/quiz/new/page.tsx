@@ -15,14 +15,14 @@ import { Brain, ArrowRight, Clock, BarChart3 } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { categoryAPI } from "@/lib/api";
 
-type SubCategory = {
+export interface SubCategory {
   id: number;
   category_id: number;
   name: string;
   category: {
     name: string;
   };
-};
+}
 
 export default function NewQuizPage() {
   const router = useRouter();
@@ -104,7 +104,7 @@ export default function NewQuizPage() {
     });
 
     router.push(
-      `/quiz/play?subCategory=${selectedSubCategory}&difficulty=${selectedDifficulty}&questionCount=${selectedQuestionCount}&timeLimit=${selectedTimeLimit}`
+      `/quiz/play?subCategoryId=${selectedSubCategory}&difficulty=${selectedDifficulty}&questionCount=${selectedQuestionCount}&timeLimit=${selectedTimeLimit}`
     );
   };
 
