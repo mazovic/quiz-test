@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,77 +11,72 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Brain,
-  Code,
-  Globe,
-  Atom,
-  Music,
-  Film,
-  BookOpen,
-  Dumbbell,
-} from "lucide-react";
+import { Brain, Code } from "lucide-react";
 import Layout from "@/components/layout/Layout";
+import { categoryAPI } from "@/lib/api";
+import { useEffect, useState } from "react";
 
-const categories = [
-  {
-    id: "science",
-    name: "Science",
-    description:
-      "Test your knowledge of scientific concepts, discoveries, and theories",
-    questionCount: 500,
-  },
-  {
-    id: "technology",
-    name: "Technology",
-    description:
-      "Challenge yourself with questions about gadgets, innovations, and tech history",
-    questionCount: 450,
-  },
-  {
-    id: "history",
-    name: "History",
-    description:
-      "Journey through time with questions about historical events and figures",
-    questionCount: 600,
-  },
-  {
-    id: "geography",
-    name: "Geography",
-    description:
-      "Explore the world with questions about countries, landmarks, and natural features",
-    questionCount: 400,
-  },
-  {
-    id: "entertainment",
-    name: "Entertainment",
-    description:
-      "Test your knowledge of movies, TV shows, music, and pop culture",
-    questionCount: 550,
-  },
-  {
-    id: "music",
-    name: "Music",
-    description: "From classical to contemporary, test your musical knowledge",
-    questionCount: 350,
-  },
-  {
-    id: "sports",
-    name: "Sports",
-    description:
-      "Challenge yourself with questions about athletes, teams, and sporting events",
-    questionCount: 480,
-  },
-  {
-    id: "general",
-    name: "General Knowledge",
-    description:
-      "A mix of questions from various categories to test your overall knowledge",
-    questionCount: 700,
-  },
-];
+type Category = {
+  id: string;
+  name: string;
+  description: string;
+  questionCount: number;
+};
 
 export default function CategoriesPage() {
+  const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      setLoading(true);
+      setTimeout(() => {
+        setLoading(false);
+      }, 1000);
+      try {
+        const generatedCategories = await categoryAPI.getCategories();
+        console.log({ generatedCategories });
+
+        setCategories(generatedCategories.data.data);
+      } catch (error) {
+        console.log("Failed to generate questions:", { error });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCategories();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <header className="border-b">
+          <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <Link href="/">
+                <div className="flex items-center gap-2">
+                  <Brain className="h-8 w-8 text-primary" />
+                  <h1 className="text-2xl font-bold">Quizly</h1>
+                </div>
+              </Link>
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <Brain className="h-16 w-16 text-primary mx-auto animate-pulse" />
+            <h2 className="text-2xl font-bold mt-4">Generating Your Quiz...</h2>
+            <p className="text-muted-foreground mt-2">
+              Our AI is crafting challenging questions just for you
+            </p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <Layout>
       <div className="min-h-screen flex flex-col">
