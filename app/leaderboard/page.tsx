@@ -1,92 +1,129 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+"use client";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Brain, Trophy, Medal, Award } from "lucide-react";
+import { Trophy, Medal, Award } from "lucide-react";
 import Layout from "@/components/layout/Layout";
+import { scoreAPI } from "@/lib/api";
+import { useEffect, useState } from "react";
 
-// Mock data for leaderboard
-const leaderboardData = [
-  {
-    id: "1",
-    name: "Alex Johnson",
-    score: 9850,
-    quizzesTaken: 42,
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    id: "2",
-    name: "Jamie Smith",
-    score: 8720,
-    quizzesTaken: 38,
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    id: "3",
-    name: "Taylor Brown",
-    score: 8450,
-    quizzesTaken: 35,
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    id: "4",
-    name: "Jordan Wilson",
-    score: 7980,
-    quizzesTaken: 31,
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    id: "5",
-    name: "Casey Miller",
-    score: 7650,
-    quizzesTaken: 29,
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    id: "6",
-    name: "Riley Davis",
-    score: 7320,
-    quizzesTaken: 27,
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    id: "7",
-    name: "Morgan Lee",
-    score: 6890,
-    quizzesTaken: 25,
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    id: "8",
-    name: "Quinn Taylor",
-    score: 6540,
-    quizzesTaken: 23,
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    id: "9",
-    name: "Avery Martin",
-    score: 6210,
-    quizzesTaken: 21,
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    id: "10",
-    name: "Reese Clark",
-    score: 5980,
-    quizzesTaken: 19,
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-];
+interface UserScore {
+  userId: number;
+  firstName: string;
+  lastName: string;
+  totalScore: number;
+  quizCount: number;
+}
 
-// Mock data for category leaders
-const categoryLeaders = [
-  { category: "Science", name: "Alex Johnson", score: 2450 },
-  { category: "Technology", name: "Jamie Smith", score: 2180 },
-  { category: "History", name: "Taylor Brown", score: 1950 },
-  { category: "Geography", name: "Jordan Wilson", score: 1820 },
-];
+interface UserCategoryScore {
+  userId: number;
+  firstName: string;
+  lastName: string;
+  categoryId: number;
+  categoryName: string;
+  categoryScore: number;
+}
+
+interface ScoreResponse {
+  msg: string;
+  data: {
+    userScores: UserScore[];
+    userCategoryScores: UserCategoryScore[];
+  };
+}
 
 export default function LeaderboardPage() {
+  const [scoreData, setScoreData] = useState<ScoreResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchScores = async () => {
+      try {
+        const response = await scoreAPI.listScores();
+        setScoreData(response.data);
+      } catch (error) {
+        console.error("Failed to fetch scores:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchScores();
+  }, []);
+
+  const getCategoryLeaders = () => {
+    if (!scoreData?.data.userCategoryScores) return [];
+
+    const categoryMap = new Map();
+
+    scoreData.data.userCategoryScores.forEach((score) => {
+      const existing = categoryMap.get(score.categoryName);
+      if (!existing || score.categoryScore > existing.categoryScore) {
+        categoryMap.set(score.categoryName, {
+          category: score.categoryName,
+          name: `${score.firstName} ${score.lastName}`,
+          score: score.categoryScore,
+        });
+      }
+    });
+
+    return Array.from(categoryMap.values());
+  };
+
+  const getLeaderboardData = () => {
+    if (!scoreData?.data.userScores) return [];
+
+    return scoreData.data.userScores
+      .sort((a, b) => b.totalScore - a.totalScore)
+      .map((user, index) => ({
+        id: user.userId.toString(),
+        name: `${user.firstName} ${user.lastName}`,
+        score: user.totalScore,
+        quizzesTaken: user.quizCount,
+        avatar: `/placeholder.svg?height=40&width=40&query=avatar for ${user.firstName}`,
+      }));
+  };
+
+  const leaderboardData = getLeaderboardData();
+  const categoryLeaders = getCategoryLeaders();
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="min-h-screen flex flex-col">
+          <main className="flex-1 py-12">
+            <div className="container mx-auto px-4">
+              <div className="text-center">
+                <h1 className="text-4xl font-bold mb-4">Leaderboard</h1>
+                <p className="text-lg text-muted-foreground">
+                  Loading scores...
+                </p>
+              </div>
+            </div>
+          </main>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!scoreData || !scoreData.data) {
+    return (
+      <Layout>
+        <div className="min-h-screen flex flex-col">
+          <main className="flex-1 py-12">
+            <div className="container mx-auto px-4">
+              <div className="text-center">
+                <h1 className="text-4xl font-bold mb-4">Leaderboard</h1>
+                <p className="text-lg text-muted-foreground">
+                  Failed to load scores. Please try again later.
+                </p>
+              </div>
+            </div>
+          </main>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <div className="min-h-screen flex flex-col">
@@ -188,13 +225,6 @@ export default function LeaderboardPage() {
                           <div className="w-8 text-center font-bold text-muted-foreground">
                             #{index + 1}
                           </div>
-                          <div className="w-10 h-10 rounded-full overflow-hidden">
-                            <img
-                              src={player.avatar || "/placeholder.svg"}
-                              alt={player.name}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
                           <div className="flex-1">
                             <p className="font-medium">{player.name}</p>
                             <p className="text-sm text-muted-foreground">
@@ -240,22 +270,6 @@ export default function LeaderboardPage() {
                           </div>
                         </div>
                       ))}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="mt-6">
-                  <CardHeader>
-                    <CardTitle>Your Ranking</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-center py-6">
-                      <p className="text-muted-foreground mb-4">
-                        Sign in to see your ranking
-                      </p>
-                      <Link href="/login">
-                        <Button>Login</Button>
-                      </Link>
                     </div>
                   </CardContent>
                 </Card>

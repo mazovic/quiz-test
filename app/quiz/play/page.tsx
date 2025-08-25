@@ -47,7 +47,7 @@ export default function PlayQuizPage() {
   let subCategoryId = searchParams.get("subCategoryId") || null;
   let difficulty = searchParams.get("difficulty") || "medium";
   let count = Number.parseInt(searchParams.get("questionCount") || "10", 10);
-  let timeLimit = Number.parseInt(searchParams.get("timeLimit") || "1", 10);
+  let timeLimit = Number.parseInt(searchParams.get("timeLimit") || "10", 10);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
