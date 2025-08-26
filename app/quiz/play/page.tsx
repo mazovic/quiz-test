@@ -202,6 +202,7 @@ export default function PlayQuizPage() {
               await scoreAPI.saveResults({
                 userId: user.id,
                 categoryId: subCategory.category.id,
+                subcategoryId: subCategory.id,
                 score: percentage,
               });
               console.log("Quiz results saved successfully");

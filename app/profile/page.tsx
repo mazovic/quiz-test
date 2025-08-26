@@ -7,81 +7,67 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  Brain,
   User,
   BarChart3,
   Trophy,
   Calendar,
-  ArrowUpRight,
   Loader2,
+  AlertCircle,
 } from "lucide-react";
 import Layout from "@/components/layout/Layout";
-import { authAPI } from "@/lib/api";
+import { userAPI } from "@/lib/api";
 
-// Mock user data
-const userData = {
-  name: "Alex Johnson",
-  email: "alex@example.com",
-  joinDate: "Jan 2023",
-  totalScore: 9850,
-  quizzesTaken: 42,
-  averageScore: 85,
-  badges: [
-    "Science Expert",
-    "History Buff",
-    "Quiz Master",
-    "Perfect Score",
-    "Speed Demon",
-  ],
-  recentQuizzes: [
-    { id: "1", category: "Science", score: 9, total: 10, date: "2023-03-01" },
-    { id: "2", category: "History", score: 8, total: 10, date: "2023-02-28" },
-    {
-      id: "3",
-      category: "Technology",
-      score: 10,
-      total: 10,
-      date: "2023-02-25",
-    },
-    { id: "4", category: "Geography", score: 7, total: 10, date: "2023-02-20" },
-  ],
-  categoryPerformance: [
-    { category: "Science", score: 92 },
-    { category: "History", score: 88 },
-    { category: "Technology", score: 95 },
-    { category: "Geography", score: 78 },
-    { category: "Entertainment", score: 82 },
-  ],
-};
+export interface UserCategoryScore {
+  userId: number;
+  firstName: string;
+  lastName: string;
+  categoryId: number;
+  categoryName: string;
+  categoryScore: number;
+  quizzesTaken: number;
+}
+
+export interface UserProfile {
+  globalRank: number;
+  userId: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  totalScore: number;
+  quizCount: number;
+  joinedDate: string;
+  userCategoriesScore: UserCategoryScore[];
+}
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("overview");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
+  const [profileData, setProfileData] = useState<UserProfile | null>(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
         setLoading(true);
-        // Replace with your actual API endpoint
-        const response: any = await authAPI.authMe();
+        setError(null);
+        const response: any = await userAPI.getProfile();
 
-        if (!response.ok) {
-          throw new Error(`Error: ${response.status}`);
+        if (response?.data?.data) {
+          setProfileData(response.data.data);
+        } else {
+          throw new Error("Invalid response format");
         }
 
         console.log(response);
-
-        setLoading(false);
       } catch (err: any) {
         console.error("Failed to fetch user data:", err);
-        setError(err.message);
+        setError(err.message || "Failed to load profile data");
+      } finally {
         setLoading(false);
       }
     };
@@ -102,6 +88,26 @@ export default function ProfilePage() {
     );
   }
 
+  if (error || !profileData) {
+    return (
+      <Layout>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="flex flex-col items-center gap-2">
+            <AlertCircle className="h-10 w-10 text-destructive" />
+            <p className="text-muted-foreground">
+              {error || "No profile data available"}
+            </p>
+            <Button onClick={() => window.location.reload()}>Try Again</Button>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  const averageScore = (profileData.totalScore / profileData.quizCount).toFixed(
+    2
+  );
+
   return (
     <Layout>
       <div className="min-h-screen flex flex-col">
@@ -114,20 +120,23 @@ export default function ProfilePage() {
                   <User className="h-12 w-12 text-primary" />
                 </div>
                 <div className="flex-1 text-center md:text-left">
-                  <h1 className="text-3xl font-bold">{userData.name}</h1>
-                  <p className="text-muted-foreground">{userData.email}</p>
+                  <h1 className="text-3xl font-bold">
+                    {profileData.firstName} {profileData.lastName}
+                  </h1>
+                  <p className="text-muted-foreground">{profileData.email}</p>
                   <div className="flex flex-wrap gap-2 mt-4 justify-center md:justify-start">
                     <Badge variant="outline" className="gap-1">
                       <Calendar className="h-3 w-3" />
-                      Joined {userData.joinDate}
+                      Joined{" "}
+                      {new Date(profileData.joinedDate).toLocaleDateString()}
                     </Badge>
                     <Badge variant="outline" className="gap-1">
                       <Trophy className="h-3 w-3" />
-                      {userData.totalScore.toLocaleString()} points
+                      {profileData.totalScore.toLocaleString()} points
                     </Badge>
                     <Badge variant="outline" className="gap-1">
                       <BarChart3 className="h-3 w-3" />
-                      {userData.quizzesTaken} quizzes
+                      {profileData.quizCount} quizzes
                     </Badge>
                   </div>
                 </div>
@@ -185,7 +194,7 @@ export default function ProfilePage() {
                       </CardHeader>
                       <CardContent>
                         <div className="text-3xl font-bold">
-                          {userData.totalScore.toLocaleString()}
+                          {profileData.totalScore.toLocaleString()}
                         </div>
                       </CardContent>
                     </Card>
@@ -197,7 +206,7 @@ export default function ProfilePage() {
                       </CardHeader>
                       <CardContent>
                         <div className="text-3xl font-bold">
-                          {userData.quizzesTaken}
+                          {profileData.quizCount}
                         </div>
                       </CardContent>
                     </Card>
@@ -209,7 +218,7 @@ export default function ProfilePage() {
                       </CardHeader>
                       <CardContent>
                         <div className="text-3xl font-bold">
-                          {userData.averageScore}%
+                          {averageScore}%
                         </div>
                       </CardContent>
                     </Card>
@@ -220,7 +229,9 @@ export default function ProfilePage() {
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="text-3xl font-bold">#42</div>
+                        <div className="text-3xl font-bold">
+                          #{profileData.globalRank}
+                        </div>
                       </CardContent>
                     </Card>
                   </div>
@@ -235,206 +246,33 @@ export default function ProfilePage() {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
-                        {userData.categoryPerformance.map((category) => (
-                          <div key={category.category}>
+                        {profileData.userCategoriesScore.map((category) => (
+                          <div key={category.categoryId}>
                             <div className="flex justify-between mb-1">
                               <span className="text-sm font-medium">
-                                {category.category}
+                                {category.categoryName}
                               </span>
                               <span className="text-sm font-medium">
-                                {category.score}%
+                                {category.categoryScore}%
                               </span>
                             </div>
                             <div className="w-full bg-muted rounded-full h-2.5">
                               <div
                                 className="bg-primary h-2.5 rounded-full"
-                                style={{ width: `${category.score}%` }}
+                                style={{ width: `${category.categoryScore}%` }}
                               ></div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Recent Quizzes */}
-                  <Card className="md:col-span-2">
-                    <CardHeader>
-                      <div className="flex justify-between items-center">
-                        <CardTitle>Recent Quizzes</CardTitle>
-                        <Link href="/profile/history">
-                          <Button variant="ghost" size="sm" className="gap-1">
-                            View All
-                            <ArrowUpRight className="h-4 w-4" />
-                          </Button>
-                        </Link>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        {userData.recentQuizzes.map((quiz) => (
-                          <div
-                            key={quiz.id}
-                            className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
-                          >
-                            <div>
-                              <p className="font-medium">{quiz.category}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {new Date(quiz.date).toLocaleDateString(
-                                  "en-US",
-                                  {
-                                    year: "numeric",
-                                    month: "short",
-                                    day: "numeric",
-                                  }
-                                )}
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-bold">
-                                {quiz.score}/{quiz.total}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                {Math.round((quiz.score / quiz.total) * 100)}%
-                              </p>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              {category.quizzesTaken} quizzes taken
                             </div>
                           </div>
                         ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Badges */}
-                  <Card className="md:col-span-2">
-                    <CardHeader>
-                      <CardTitle>Achievements</CardTitle>
-                      <CardDescription>
-                        Badges you've earned through quizzing
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex flex-wrap gap-2">
-                        {userData.badges.map((badge) => (
-                          <Badge
-                            key={badge}
-                            variant="secondary"
-                            className="px-3 py-1"
-                          >
-                            {badge}
-                          </Badge>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
-
-              {activeTab === "history" && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Quiz History</CardTitle>
-                    <CardDescription>All quizzes you've taken</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {[
-                        ...userData.recentQuizzes,
-                        ...userData.recentQuizzes,
-                      ].map((quiz, index) => (
-                        <div
-                          key={`${quiz.id}-${index}`}
-                          className="flex items-center justify-between p-4 bg-muted/50 rounded-lg"
-                        >
-                          <div>
-                            <p className="font-medium">{quiz.category}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {new Date(quiz.date).toLocaleDateString("en-US", {
-                                year: "numeric",
-                                month: "short",
-                                day: "numeric",
-                              })}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <div className="text-right">
-                              <p className="font-bold">
-                                {quiz.score}/{quiz.total}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                {Math.round((quiz.score / quiz.total) * 100)}%
-                              </p>
-                            </div>
-                            <Link href={`/quiz/results/${quiz.id}`}>
-                              <Button variant="outline" size="sm">
-                                View Details
-                              </Button>
-                            </Link>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                  <CardFooter className="flex justify-center">
-                    <Button variant="outline">Load More</Button>
-                  </CardFooter>
-                </Card>
-              )}
-
-              {activeTab === "achievements" && (
-                <div className="grid md:grid-cols-2 gap-8">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Earned Badges</CardTitle>
-                      <CardDescription>
-                        Achievements you've unlocked
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-2 gap-4">
-                        {userData.badges.map((badge) => (
-                          <div
-                            key={badge}
-                            className="bg-muted/50 rounded-lg p-4 text-center"
-                          >
-                            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                              <Trophy className="h-6 w-6 text-primary" />
-                            </div>
-                            <p className="font-medium">{badge}</p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Earned on Feb 28, 2023
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Available Badges</CardTitle>
-                      <CardDescription>Achievements to unlock</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-2 gap-4">
-                        {[
-                          "Geography Pro",
-                          "Music Maestro",
-                          "Entertainment Guru",
-                          "100 Quizzes",
-                        ].map((badge) => (
-                          <div
-                            key={badge}
-                            className="bg-muted/50 rounded-lg p-4 text-center opacity-60"
-                          >
-                            <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
-                              <Trophy className="h-6 w-6 text-muted-foreground" />
-                            </div>
-                            <p className="font-medium">{badge}</p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Not yet earned
-                            </p>
-                          </div>
-                        ))}
+                        {profileData.userCategoriesScore.length === 0 && (
+                          <p className="text-muted-foreground text-center py-4">
+                            No category data available yet. Take some quizzes to
+                            see your performance!
+                          </p>
+                        )}
                       </div>
                     </CardContent>
                   </Card>

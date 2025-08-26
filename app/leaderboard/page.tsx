@@ -14,20 +14,23 @@ interface UserScore {
   quizCount: number;
 }
 
-interface UserCategoryScore {
+interface UserSubcategoryScores {
   userId: number;
   firstName: string;
   lastName: string;
   categoryId: number;
   categoryName: string;
-  categoryScore: number;
+  subcategoryId: number;
+  subcategoryName: string;
+  subcategoryScore: number;
+  quizzesTaken: number;
 }
 
 interface ScoreResponse {
   msg: string;
   data: {
     userScores: UserScore[];
-    userCategoryScores: UserCategoryScore[];
+    userSubcategoryScores: UserSubcategoryScores[];
   };
 }
 
@@ -51,22 +54,45 @@ export default function LeaderboardPage() {
   }, []);
 
   const getCategoryLeaders = () => {
-    if (!scoreData?.data.userCategoryScores) return [];
+    if (!scoreData?.data.userSubcategoryScores) return [];
 
-    const categoryMap = new Map();
+    // Group scores by subcategory
+    const subcategoryGroups = new Map<string, UserSubcategoryScores[]>();
 
-    scoreData.data.userCategoryScores.forEach((score) => {
-      const existing = categoryMap.get(score.categoryName);
-      if (!existing || score.categoryScore > existing.categoryScore) {
-        categoryMap.set(score.categoryName, {
-          category: score.categoryName,
-          name: `${score.firstName} ${score.lastName}`,
-          score: score.categoryScore,
+    scoreData.data.userSubcategoryScores.forEach((score) => {
+      const subcategoryKey = `${score.subcategoryId}`;
+
+      if (!subcategoryGroups.has(subcategoryKey)) {
+        subcategoryGroups.set(subcategoryKey, []);
+      }
+      subcategoryGroups.get(subcategoryKey)!.push(score);
+    });
+
+    // Find the champion (highest score) for each subcategory
+    const champions: Array<{
+      category: string;
+      name: string;
+      score: number;
+    }> = [];
+
+    subcategoryGroups.forEach((scores) => {
+      // Sort scores in descending order and get the highest
+      const sortedScores = scores.sort(
+        (a, b) => b.subcategoryScore - a.subcategoryScore
+      );
+      const champion = sortedScores[0];
+
+      if (champion) {
+        champions.push({
+          category: `${champion.categoryName} - ${champion.subcategoryName}`,
+          name: `${champion.firstName} ${champion.lastName}`,
+          score: champion.subcategoryScore,
         });
       }
     });
 
-    return Array.from(categoryMap.values());
+    // Sort champions by score (highest first) for better display
+    return champions.sort((a, b) => b.score - a.score);
   };
 
   const getLeaderboardData = () => {
@@ -254,22 +280,28 @@ export default function LeaderboardPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {categoryLeaders.map((leader) => (
-                        <div
-                          key={leader.category}
-                          className="p-3 rounded-lg bg-muted/50"
-                        >
-                          <p className="text-sm text-muted-foreground">
-                            {leader.category}
-                          </p>
-                          <div className="flex justify-between items-center mt-1">
-                            <p className="font-medium">{leader.name}</p>
-                            <p className="font-bold">
-                              {leader.score.toLocaleString()}
+                      {categoryLeaders.length > 0 ? (
+                        categoryLeaders.map((leader) => (
+                          <div
+                            key={leader.category}
+                            className="p-3 rounded-lg bg-muted/50"
+                          >
+                            <p className="text-sm text-muted-foreground">
+                              {leader.category}
                             </p>
+                            <div className="flex justify-between items-center mt-1">
+                              <p className="font-medium">{leader.name}</p>
+                              <p className="font-bold">
+                                {leader.score.toLocaleString()}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground text-center">
+                          No category scores available yet
+                        </p>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
