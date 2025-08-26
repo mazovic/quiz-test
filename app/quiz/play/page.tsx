@@ -26,8 +26,15 @@ import {
   ExternalLink,
 } from "lucide-react";
 import type { Question } from "@/lib/types";
-import { categoryAPI, quizAPI, resourceAPI, userAPI } from "@/lib/api";
-import { SubCategory } from "../new/page";
+import {
+  categoryAPI,
+  quizAPI,
+  resourceAPI,
+  userAPI,
+  scoreAPI,
+  authAPI,
+} from "@/lib/api";
+import type { SubCategory } from "../new/page";
 import { Separator } from "@/components/ui/separator";
 
 type Resource = {
@@ -44,10 +51,10 @@ export default function PlayQuizPage() {
   const searchParams = useSearchParams();
 
   const leveling = Number.parseInt(searchParams.get("level") || "0", 2);
-  let subCategoryId = searchParams.get("subCategoryId") || null;
+  const subCategoryId = searchParams.get("subCategoryId") || null;
   let difficulty = searchParams.get("difficulty") || "medium";
   let count = Number.parseInt(searchParams.get("questionCount") || "10", 10);
-  let timeLimit = Number.parseInt(searchParams.get("timeLimit") || "10", 10);
+  const timeLimit = Number.parseInt(searchParams.get("timeLimit") || "100", 10);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
@@ -58,6 +65,7 @@ export default function PlayQuizPage() {
   const [category, setCategory] = useState<string>("Problem Solving");
   const [subCategory, setSubCategory] = useState<SubCategory | null>(null);
   const [resources, setResources] = useState<Resource[]>([]);
+  const [user, setUser] = useState<any>(null);
 
   if (leveling) {
     count = 15;
@@ -66,7 +74,20 @@ export default function PlayQuizPage() {
 
   const [questions, setQuestions] = useState<Question[]>([]);
 
-  // Generate questions on component mount
+  useEffect(() => {
+    const checkUserAuth = async () => {
+      try {
+        const userData = await authAPI.authMe();
+        setUser(userData.data);
+      } catch (error) {
+        console.log("User not authenticated:", error);
+        setUser(null);
+      }
+    };
+
+    checkUserAuth();
+  }, []);
+
   useEffect(() => {
     const loadQuestions = async () => {
       setLoading(true);
@@ -109,7 +130,6 @@ export default function PlayQuizPage() {
     }
   }, [subCategory]);
 
-  // Timer effect
   useEffect(() => {
     if (loading || quizCompleted || !timeLimit) return;
 
@@ -148,7 +168,6 @@ export default function PlayQuizPage() {
 
     setIsAnswerSubmitted(true);
 
-    // Move to next question after a delay
     setTimeout(() => {
       if (currentQuestionIndex < questions.length - 1) {
         setCurrentQuestionIndex((prev) => prev + 1);
@@ -163,23 +182,38 @@ export default function PlayQuizPage() {
 
   useEffect(() => {
     const handleQuizCompletion = async () => {
+      const percentage = Math.round((score / questions.length) * 100);
+
       if (quizCompleted) {
         if (leveling === 1) {
           let level = "beginner";
-          if (score <= 60) {
-            level = "beginner";
-          } else if (score <= 80) {
+          if (percentage >= 60) {
             level = "intermediate";
+          }
+          if (percentage >= 80) {
+            level = "advanced";
           }
           const response = await userAPI.updateLeveling(level);
           const data = await resourceAPI.getResources(level);
           setResources(data.data.data);
-          console.log({ response, data });
+        } else {
+          if (user && subCategory) {
+            try {
+              await scoreAPI.saveResults({
+                userId: user.id,
+                categoryId: subCategory.category.id,
+                score: percentage,
+              });
+              console.log("Quiz results saved successfully");
+            } catch (error) {
+              console.error("Failed to save quiz results:", error);
+            }
+          }
         }
       }
     };
     handleQuizCompletion();
-  }, [quizCompleted]);
+  }, [quizCompleted, leveling, score, category, user]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -227,7 +261,6 @@ export default function PlayQuizPage() {
       return acc;
     }, {} as Record<string, typeof resources>);
 
-    // Get icon for resource type
     const getResourceIcon = (type: string) => {
       switch (type.toLowerCase()) {
         case "book":
@@ -241,7 +274,6 @@ export default function PlayQuizPage() {
       }
     };
 
-    // Get badge color for resource level
     const getLevelBadgeVariant = (level: string) => {
       switch (level.toLowerCase()) {
         case "beginner":
@@ -273,7 +305,6 @@ export default function PlayQuizPage() {
         <main className="flex-1 py-12">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto space-y-8">
-              {/* Quiz Results Card */}
               <Card className="overflow-hidden">
                 <div
                   className="bg-primary h-2"
@@ -345,7 +376,7 @@ export default function PlayQuizPage() {
                 <CardFooter className="flex flex-col sm:flex-row gap-4">
                   <Button
                     variant="outline"
-                    className="w-full sm:w-auto"
+                    className="w-full sm:w-auto bg-transparent"
                     onClick={() => router.push("/quiz/new")}
                   >
                     New Quiz
@@ -359,76 +390,80 @@ export default function PlayQuizPage() {
                 </CardFooter>
               </Card>
 
-              {/* Resources Section */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-2xl flex items-center gap-2">
-                    <Book className="h-6 w-6" />
-                    Recommended Resources
-                  </CardTitle>
-                  <p className="text-muted-foreground">
-                    Continue your learning journey with these curated resources
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {Object.entries(groupedResources).map(
-                    ([type, typeResources]) => (
-                      <div key={type} className="space-y-4">
-                        <div className="flex items-center gap-2">
-                          {getResourceIcon(type)}
-                          <h3 className="text-lg font-semibold capitalize">
-                            {type}s ({typeResources.length})
-                          </h3>
-                        </div>
-                        <Separator />
-                        <div className="grid gap-4 md:grid-cols-2">
-                          {typeResources.map((resource) => (
-                            <Card
-                              key={resource.id}
-                              className="hover:shadow-md transition-shadow"
-                            >
-                              <CardContent className="p-4">
-                                <div className="space-y-3">
-                                  <div className="flex items-start justify-between gap-2">
-                                    <h4 className="font-semibold text-sm leading-tight">
-                                      {resource.resource_name}
-                                    </h4>
-                                    <Badge
-                                      variant={getLevelBadgeVariant(
-                                        resource.resource_level
-                                      )}
-                                      className="text-xs shrink-0"
+              {leveling ? (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-2xl flex items-center gap-2">
+                      <Book className="h-6 w-6" />
+                      Recommended Resources
+                    </CardTitle>
+                    <p className="text-muted-foreground">
+                      Continue your learning journey with these curated
+                      resources
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {Object.entries(groupedResources).map(
+                      ([type, typeResources]) => (
+                        <div key={type} className="space-y-4">
+                          <div className="flex items-center gap-2">
+                            {getResourceIcon(type)}
+                            <h3 className="text-lg font-semibold capitalize">
+                              {type}s ({typeResources.length})
+                            </h3>
+                          </div>
+                          <Separator />
+                          <div className="grid gap-4 md:grid-cols-2">
+                            {typeResources.map((resource) => (
+                              <Card
+                                key={resource.id}
+                                className="hover:shadow-md transition-shadow"
+                              >
+                                <CardContent className="p-4">
+                                  <div className="space-y-3">
+                                    <div className="flex items-start justify-between gap-2">
+                                      <h4 className="font-semibold text-sm leading-tight">
+                                        {resource.resource_name}
+                                      </h4>
+                                      <Badge
+                                        variant={getLevelBadgeVariant(
+                                          resource.resource_level
+                                        )}
+                                        className="text-xs shrink-0"
+                                      >
+                                        {resource.resource_level}
+                                      </Badge>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground line-clamp-2">
+                                      {resource.resource_description}
+                                    </p>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="w-full bg-transparent"
+                                      onClick={() =>
+                                        window.open(
+                                          resource.resource_url,
+                                          "_blank"
+                                        )
+                                      }
                                     >
-                                      {resource.resource_level}
-                                    </Badge>
+                                      <ExternalLink className="h-3 w-3 mr-2" />
+                                      View Resource
+                                    </Button>
                                   </div>
-                                  <p className="text-sm text-muted-foreground line-clamp-2">
-                                    {resource.resource_description}
-                                  </p>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="w-full"
-                                    onClick={() =>
-                                      window.open(
-                                        resource.resource_url,
-                                        "_blank"
-                                      )
-                                    }
-                                  >
-                                    <ExternalLink className="h-3 w-3 mr-2" />
-                                    View Resource
-                                  </Button>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          ))}
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )
-                  )}
-                </CardContent>
-              </Card>
+                      )
+                    )}
+                  </CardContent>
+                </Card>
+              ) : (
+                <></>
+              )}
             </div>
           </div>
         </main>

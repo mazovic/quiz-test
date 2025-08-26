@@ -21,6 +21,7 @@ export interface SubCategory {
   name: string;
   category: {
     name: string;
+    id: number;
   };
 }
 
