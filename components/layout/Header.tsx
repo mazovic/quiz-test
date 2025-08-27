@@ -44,6 +44,9 @@ export default function Header() {
           <Link href="/leaderboard" className="font-medium hover:text-primary">
             Leaderboard
           </Link>
+          <Link href="/resources" className="font-medium hover:text-primary">
+            Resources
+          </Link>
           {isLoggedIn && (
             <Link href="/profile" className="font-medium hover:text-primary">
               Profile
