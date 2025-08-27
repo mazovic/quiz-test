@@ -28,7 +28,9 @@ export interface UserCategoryScore {
   lastName: string;
   categoryId: number;
   categoryName: string;
-  categoryScore: number;
+  subcategoryId: number;
+  subcategoryName: string;
+  subcategoryScore: number;
   quizzesTaken: number;
 }
 
@@ -104,9 +106,10 @@ export default function ProfilePage() {
     );
   }
 
-  const averageScore = (profileData.totalScore / profileData.quizCount).toFixed(
-    2
-  );
+  const averageScore =
+    profileData.quizCount > 0
+      ? Number((profileData.totalScore / profileData.quizCount).toFixed(2))
+      : 0;
 
   return (
     <Layout>
@@ -218,7 +221,7 @@ export default function ProfilePage() {
                       </CardHeader>
                       <CardContent>
                         <div className="text-3xl font-bold">
-                          {averageScore}%
+                          {averageScore > 0 ? `${averageScore}%` : "N/A"}
                         </div>
                       </CardContent>
                     </Card>
@@ -230,7 +233,9 @@ export default function ProfilePage() {
                       </CardHeader>
                       <CardContent>
                         <div className="text-3xl font-bold">
-                          #{profileData.globalRank}
+                          {profileData.quizCount > 0
+                            ? `#${profileData.globalRank}`
+                            : "N/A"}
                         </div>
                       </CardContent>
                     </Card>
@@ -247,19 +252,26 @@ export default function ProfilePage() {
                     <CardContent>
                       <div className="space-y-4">
                         {profileData.userCategoriesScore.map((category) => (
-                          <div key={category.categoryId}>
+                          <div key={category.subcategoryId}>
                             <div className="flex justify-between mb-1">
                               <span className="text-sm font-medium">
-                                {category.categoryName}
+                                {`${category.categoryName}-${category.subcategoryName}`}
                               </span>
                               <span className="text-sm font-medium">
-                                {category.categoryScore}%
+                                {category.subcategoryScore /
+                                  category.quizzesTaken}
+                                %
                               </span>
                             </div>
                             <div className="w-full bg-muted rounded-full h-2.5">
                               <div
                                 className="bg-primary h-2.5 rounded-full"
-                                style={{ width: `${category.categoryScore}%` }}
+                                style={{
+                                  width: `${
+                                    category.subcategoryScore /
+                                    category.quizzesTaken
+                                  }%`,
+                                }}
                               ></div>
                             </div>
                             <div className="text-xs text-muted-foreground mt-1">
