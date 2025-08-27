@@ -18,6 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Brain } from "lucide-react";
+import { setTokenCookies } from "@/lib/setCookies";
 
 // Define validation schema using Yup
 const LoginSchema = Yup.object().shape({
@@ -46,20 +47,32 @@ export default function LoginPage() {
       // Send login request to external backend
       const response = await authAPI.login(userData);
 
-      console.log("Login successful:", response.data);
-
       // Store authentication data if the API returns a token
       if (response.data.token.accessToken) {
         localStorage.setItem("token", response.data.token.accessToken);
+        await setTokenCookies(response.data.token.accessToken);
 
-        // Optionally store user info if it's returned
-        if (response.data.user) {
-          localStorage.setItem("user", JSON.stringify(response.data.user));
+        const { data } = await authAPI.authMe();
+
+        if (data) {
+          localStorage.setItem("user", JSON.stringify(data));
+        }
+
+        const roleName = data.role?.name?.toLowerCase().trim();
+
+        if (roleName === "user") {
+          router.push("/profile");
+        } else if (roleName === "admin") {
+          router.push("/admin");
+        } else if (roleName === "editor") {
+          console.log("routing to ewditor ");
+
+          router.push("/admin");
+        } else {
+          // Handle any other roles or fallback
+          router.push("/");
         }
       }
-
-      // Redirect to profile page on successful login
-      router.push("/profile");
     } catch (err: any) {
       console.log("Login failed:", err);
 

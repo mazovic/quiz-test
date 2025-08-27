@@ -18,6 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Brain } from "lucide-react";
+import { setTokenCookies } from "@/lib/setCookies";
 
 // Define validation schema using Yup
 const SignupSchema = Yup.object().shape({
@@ -66,6 +67,8 @@ export default function SignUpPage() {
       // Store authentication data if the API returns a token
       if (response.data.token) {
         localStorage.setItem("token", response.data.token.accessToken);
+
+        setTokenCookies(response.data.token.accessToken);
 
         // Optionally store user info if it's returned
         if (response.data.user) {
