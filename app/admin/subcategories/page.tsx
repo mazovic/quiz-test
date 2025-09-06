@@ -32,7 +32,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Pagination } from "@/components/ui/pagination";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationEllipsis,
+  PaginationPrevious,
+  PaginationNext,
+} from "@/components/ui/pagination";
 import { MoreHorizontal, Search, Plus, Edit } from "lucide-react";
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { categoryAPI } from "@/lib/api";
@@ -53,6 +61,8 @@ export default function SubCategoryPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [searchName, setSearchName] = useState("");
+  const [selectedFilterCategory, setSelectedFilterCategory] =
+    useState<string>("");
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<"add" | "edit">("add");
@@ -99,13 +109,10 @@ export default function SubCategoryPage() {
   const handleSaveSubCategory = async () => {
     try {
       if (dialogMode === "add") {
-        // Add new subCategory logic here
         await categoryAPI.createSubCat(subCategoryName, selectedCategoryId);
         fetchSubCategories();
         console.log("Adding subCategory:", subCategoryName);
-        // await subCategoryAPI.createSubCategory({ name: subCategoryName });
       } else {
-        // Update subCategory logic here
         await categoryAPI.updateSubCat(
           selectedSubCategory?.id,
           subCategoryName,
@@ -117,7 +124,6 @@ export default function SubCategoryPage() {
           "to:",
           subCategoryName
         );
-        // await subCategoryAPI.updateSubCategory(selectedSubCategory?.id, { name: subCategoryName });
       }
       setIsDialogOpen(false);
       fetchSubCategories(); // Refresh the list
@@ -132,9 +138,13 @@ export default function SubCategoryPage() {
         .toLowerCase()
         .includes(searchName.toLowerCase());
 
-      return matchesName;
+      const matchesCategory =
+        selectedFilterCategory === "" ||
+        subCategory.category_id.toString() === selectedFilterCategory;
+
+      return matchesName && matchesCategory;
     });
-  }, [subCategories, searchName]);
+  }, [subCategories, searchName, selectedFilterCategory]);
 
   const paginatedSubCategories = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -182,6 +192,29 @@ export default function SubCategoryPage() {
                 className="pl-10"
               />
             </div>
+          </div>
+
+          <div className="flex-1 space-y-2">
+            <label className="text-sm font-medium">Filter by Category</label>
+            <Select
+              value={selectedFilterCategory}
+              onValueChange={(value) => {
+                setSelectedFilterCategory(value);
+                handleFilterChange();
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="All categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All categories</SelectItem>
+                {categories.map((category) => (
+                  <SelectItem key={category.id} value={category.id.toString()}>
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -288,7 +321,7 @@ export default function SubCategoryPage() {
                   Category
                 </label>
                 <Select
-                  value={selectedCategoryId?.toString() || ""}
+                  value={selectedCategoryId?.toString() || "all"}
                   onValueChange={(value) =>
                     setSelectedCategoryId(Number(value))
                   }
@@ -297,6 +330,7 @@ export default function SubCategoryPage() {
                     <SelectValue placeholder="Select a category..." />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="all">All categories</SelectItem>
                     {categories.map((category) => (
                       <SelectItem
                         key={category.id}
