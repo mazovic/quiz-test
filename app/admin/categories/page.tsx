@@ -26,7 +26,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Pagination } from "@/components/ui/pagination";
-import { MoreHorizontal, Search, Plus, Edit } from "lucide-react";
+import { MoreHorizontal, Search, Plus, Edit, TrashIcon } from "lucide-react";
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { categoryAPI } from "@/lib/api";
 
@@ -75,6 +75,15 @@ export default function CategoryPage() {
     setSelectedCategory(category);
     setCategoryName(category.name);
     setIsDialogOpen(true);
+  };
+
+  const handleDeleteQuestion = async (id: number) => {
+    try {
+      await categoryAPI.deleteCat(id);
+      fetchCategories();
+    } catch (error) {
+      console.error("Failed to Delete question:", error);
+    }
   };
 
   const handleSaveCategory = async () => {
@@ -197,6 +206,12 @@ export default function CategoryPage() {
                           >
                             <Edit className="mr-2 h-4 w-4" />
                             Update Name
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleDeleteQuestion(category.id)}
+                          >
+                            <TrashIcon className="mr-2 h-4 w-4" />
+                            Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

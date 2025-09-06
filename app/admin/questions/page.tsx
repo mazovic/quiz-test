@@ -34,7 +34,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Pagination } from "@/components/ui/pagination";
-import { MoreHorizontal, Search, Plus, Edit } from "lucide-react";
+import {
+  MoreHorizontal,
+  Search,
+  Plus,
+  Edit,
+  Delete,
+  TrashIcon,
+} from "lucide-react";
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { categoryAPI, quizAPI } from "@/lib/api";
 import type { SubCategory } from "../subcategories/page";
@@ -123,6 +130,15 @@ export default function QuestionsPage() {
     setDifficulty(question.difficulty);
     setSelectedSubCategoryId(question.subCategoryId);
     setIsDialogOpen(true);
+  };
+
+  const handleDeleteQuestion = async (question: Question) => {
+    try {
+      await quizAPI.delete(question.id);
+      fetchQuestions();
+    } catch (error) {
+      console.error("Failed to Delete question:", error);
+    }
   };
 
   const handleSaveQuestion = async () => {
@@ -409,6 +425,12 @@ export default function QuestionsPage() {
                           >
                             <Edit className="mr-2 h-4 w-4" />
                             Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleDeleteQuestion(question)}
+                          >
+                            <TrashIcon className="mr-2 h-4 w-4" />
+                            Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

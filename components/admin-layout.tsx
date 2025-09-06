@@ -20,6 +20,7 @@ import {
   ChevronRight,
   Layers,
   ListTree,
+  BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -42,6 +43,12 @@ const navigationItems = [
     icon: ListTree,
     label: "Subcategories",
     href: "/admin/subcategories",
+    active: false,
+  },
+  {
+    icon: BookOpen,
+    label: "Resources",
+    href: "/admin/resources",
     active: false,
   },
 ];

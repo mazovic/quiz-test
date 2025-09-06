@@ -41,7 +41,7 @@ import {
   PaginationPrevious,
   PaginationNext,
 } from "@/components/ui/pagination";
-import { MoreHorizontal, Search, Plus, Edit } from "lucide-react";
+import { MoreHorizontal, Search, Plus, Edit, TrashIcon } from "lucide-react";
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { categoryAPI } from "@/lib/api";
 import type { Category } from "../categories/page";
@@ -104,6 +104,15 @@ export default function SubCategoryPage() {
     setSelectedCategoryId(subCategory.category_id);
 
     setIsDialogOpen(true);
+  };
+
+  const handleDeleteQuestion = async (id: number) => {
+    try {
+      await categoryAPI.deleteSub(id);
+      fetchSubCategories();
+    } catch (error) {
+      console.error("Failed to Delete question:", error);
+    }
   };
 
   const handleSaveSubCategory = async () => {
@@ -253,6 +262,12 @@ export default function SubCategoryPage() {
                           >
                             <Edit className="mr-2 h-4 w-4" />
                             Update
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleDeleteQuestion(subCategory.id)}
+                          >
+                            <TrashIcon className="mr-2 h-4 w-4" />
+                            Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
