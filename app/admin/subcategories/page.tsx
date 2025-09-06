@@ -46,7 +46,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { categoryAPI } from "@/lib/api";
 import type { Category } from "../categories/page";
 
-interface SubCategory {
+export interface SubCategory {
   id: number;
   category_id: number;
   name: string;
