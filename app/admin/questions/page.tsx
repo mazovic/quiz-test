@@ -41,6 +41,7 @@ import {
   Edit,
   Delete,
   TrashIcon,
+  X,
 } from "lucide-react";
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { categoryAPI, quizAPI } from "@/lib/api";
@@ -80,7 +81,7 @@ export default function QuestionsPage() {
 
   // Form fields
   const [questionText, setQuestionText] = useState("");
-  const [options, setOptions] = useState<string[]>(["", "", "", ""]);
+  const [options, setOptions] = useState<string[]>(["", ""]); // Start with 2 empty options
   const [correctAnswer, setCorrectAnswer] = useState("");
   const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">(
     "medium"
@@ -113,7 +114,7 @@ export default function QuestionsPage() {
     setDialogMode("add");
     setSelectedQuestion(null);
     setQuestionText("");
-    setOptions(["", "", "", ""]);
+    setOptions(["", ""]); // Start with 2 empty options
     setCorrectAnswer("");
     setDifficulty("medium");
     setSelectedSubCategoryId(null);
@@ -125,7 +126,8 @@ export default function QuestionsPage() {
     setSelectedQuestion(question);
     setQuestionText(question.question);
     const parsedOptions = parseOptionsToArray(question.options);
-    setOptions(parsedOptions);
+    // Ensure at least 2 options
+    setOptions(parsedOptions.length < 2 ? ["", ""] : parsedOptions);
     setCorrectAnswer(question.correctAnswer);
     setDifficulty(question.difficulty);
     setSelectedSubCategoryId(question.subCategoryId);
@@ -146,12 +148,15 @@ export default function QuestionsPage() {
       // Filter out empty options and ensure we have valid options
       const validOptions = options.filter((opt) => opt.trim() !== "");
 
-      // Convert options array to JSON string for backend
-      const optionsString = JSON.stringify(validOptions);
+      // Validate at least 2 options
+      if (validOptions.length < 2) {
+        alert("Please provide at least 2 options");
+        return;
+      }
 
       const questionData = {
         question: questionText,
-        options: validOptions, // This will be a string like '["Option A", "Option B", "Option C", "Option D"]'
+        options: validOptions,
         correctAnswer: correctAnswer,
         difficulty: difficulty,
         subCategoryId: selectedSubCategoryId,
@@ -159,13 +164,13 @@ export default function QuestionsPage() {
 
       if (dialogMode === "add") {
         await quizAPI.createQuiz(questionData);
-        console.log("Adding question with options as string:", questionData);
+        console.log("Adding question with options:", questionData);
       } else {
         await quizAPI.updateQuiz(selectedQuestion?.id, questionData);
         console.log(
           "Updating question:",
           selectedQuestion?.id,
-          "with options as string:",
+          "with options:",
           questionData
         );
       }
@@ -178,13 +183,9 @@ export default function QuestionsPage() {
   };
 
   const parseOptionsToArray = (optionsData: string | string[]): string[] => {
-    // If it's already an array, just ensure it has 4 elements
+    // If it's already an array, return it
     if (Array.isArray(optionsData)) {
-      const result = ["", "", "", ""];
-      for (let i = 0; i < Math.min(4, optionsData.length); i++) {
-        result[i] = optionsData[i] || "";
-      }
-      return result;
+      return optionsData;
     }
 
     // If it's a string, try to parse it as JSON
@@ -192,25 +193,15 @@ export default function QuestionsPage() {
       try {
         const parsed = JSON.parse(optionsData);
         if (Array.isArray(parsed)) {
-          // Ensure we always have exactly 4 options for the form
-          const result = ["", "", "", ""];
-          for (let i = 0; i < Math.min(4, parsed.length); i++) {
-            result[i] = parsed[i] || "";
-          }
-          return result;
+          return parsed;
         }
       } catch {
         // If parsing fails, try comma-separated
-        const split = optionsData.split(",").map((opt) => opt.trim());
-        const result = ["", "", "", ""];
-        for (let i = 0; i < Math.min(4, split.length); i++) {
-          result[i] = split[i] || "";
-        }
-        return result;
+        return optionsData.split(",").map((opt) => opt.trim());
       }
     }
 
-    return ["", "", "", ""];
+    return [];
   };
 
   const parseOptionsForDisplay = (optionsData: string | string[]): string => {
@@ -239,6 +230,19 @@ export default function QuestionsPage() {
     const newOptions = [...options];
     newOptions[index] = value;
     setOptions(newOptions);
+  };
+
+  const addOption = () => {
+    if (options.length < 10) {
+      setOptions([...options, ""]);
+    }
+  };
+
+  const removeOption = (index: number) => {
+    if (options.length > 2) {
+      const newOptions = options.filter((_, i) => i !== index);
+      setOptions(newOptions);
+    }
   };
 
   const filteredQuestions = useMemo(() => {
@@ -275,6 +279,11 @@ export default function QuestionsPage() {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+  };
+
+  // Count non-empty options for validation
+  const getValidOptionsCount = () => {
+    return options.filter((opt) => opt.trim() !== "").length;
   };
 
   return (
@@ -462,7 +471,7 @@ export default function QuestionsPage() {
         )}
 
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="sm:max-w-[600px]">
+          <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {dialogMode === "add" ? "Add Question" : "Edit Question"}
@@ -488,11 +497,25 @@ export default function QuestionsPage() {
               </div>
 
               <div className="grid gap-2">
-                <label className="text-sm font-medium">Options</label>
-                <div className="grid gap-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium">
+                    Options ({getValidOptionsCount()} filled, min: 2, max: 10)
+                  </label>
+                  <Button
+                    type="button"
+                    onClick={addOption}
+                    disabled={options.length >= 10}
+                    size="sm"
+                    variant="outline"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Option
+                  </Button>
+                </div>
+                <div className="grid gap-2 max-h-[300px] overflow-y-auto pr-2">
                   {options.map((option, index) => (
                     <div key={index} className="flex items-center gap-2">
-                      <span className="text-sm font-medium w-8">
+                      <span className="text-sm font-medium min-w-[30px]">
                         {String.fromCharCode(65 + index)}.
                       </span>
                       <Input
@@ -501,10 +524,25 @@ export default function QuestionsPage() {
                         placeholder={`Option ${String.fromCharCode(
                           65 + index
                         )}`}
+                        className="flex-1"
                       />
+                      <Button
+                        type="button"
+                        onClick={() => removeOption(index)}
+                        disabled={options.length <= 2}
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 p-0"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
                   ))}
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Add between 2 and 10 options. Empty options will be removed
+                  when saving.
+                </p>
               </div>
 
               <div className="grid gap-2">
@@ -517,6 +555,9 @@ export default function QuestionsPage() {
                   onChange={(e) => setCorrectAnswer(e.target.value)}
                   placeholder="Enter the correct answer..."
                 />
+                <p className="text-xs text-muted-foreground">
+                  Must match one of the options exactly
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -576,7 +617,7 @@ export default function QuestionsPage() {
                 onClick={handleSaveQuestion}
                 disabled={
                   !questionText.trim() ||
-                  options.every((opt) => !opt.trim()) || // Changed: At least one option should be filled
+                  getValidOptionsCount() < 2 || // At least 2 filled options
                   !correctAnswer.trim() ||
                   !selectedSubCategoryId
                 }
