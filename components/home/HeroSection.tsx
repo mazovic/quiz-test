@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Zap, Brain } from "lucide-react"
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Zap, Brain } from "lucide-react";
 
 export default function HeroSection() {
   return (
@@ -11,22 +11,23 @@ export default function HeroSection() {
       <div className="container mx-auto px-4 flex flex-col md:flex-row items-center gap-12">
         <div className="md:w-1/2 space-y-6">
           <h1 className="text-4xl md:text-6xl font-bold leading-tight">
-            Master Programming with <span className="text-primary">AI-Powered</span> Quizzes
+            Master Programming with{" "}
+            <span className="text-primary">AI-Powered</span> Quizzes
           </h1>
           <p className="text-lg text-muted-foreground">
-            Quizly generates fresh, challenging questions across various programming languages, adapting to your
-            skill level for a personalized learning experience.
+            Quizly generates fresh, challenging questions across various
+            programming languages, adapting to your skill level for a
+            personalized learning experience.
           </p>
           <div className="flex gap-4 pt-4">
-            <Link href="/quiz/new" passHref>
-              <Button size="lg" className="gap-2" onClick={() => console.log("Start Quiz button clicked")}>
+            <Link href="/quiz/play?level=1" passHref>
+              <Button
+                size="lg"
+                className="gap-2"
+                onClick={() => console.log("Start Quiz button clicked")}
+              >
                 <Zap className="h-5 w-5" />
-                Start Coding Quiz
-              </Button>
-            </Link>
-            <Link href="/categories">
-              <Button size="lg" variant="outline">
-                Explore Categories
+                Start Coding Quiz Now To Know your Level
               </Button>
             </Link>
           </div>
@@ -59,5 +60,5 @@ export default function HeroSection() {
         </div>
       </div>
     </section>
-  )
+  );
 }
