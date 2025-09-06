@@ -36,7 +36,7 @@ import {
   X,
 } from "lucide-react";
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { userAPI } from "@/lib/api";
+import { authAPI, userAPI } from "@/lib/api";
 
 interface User {
   id: string;
@@ -59,9 +59,12 @@ export default function UserPage() {
   const [searchEmail, setSearchEmail] = useState("");
   const [filterRole, setFilterRole] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [role, setRole] = useState<string>("editor");
 
   const fetchUsers = useCallback(async () => {
     try {
+      const { data } = await authAPI.authMe();
+      setRole(data.data.role.name);
       const res = await userAPI.listUsers();
       setUsers(res.data.data);
     } catch (error) {
@@ -313,24 +316,20 @@ export default function UserPage() {
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => handleChangeRole(user.id, 2)}
-                          >
-                            <Shield className="mr-2 h-4 w-4" />
-                            Make Admin
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleChangeRole(user.id, 3)}
-                          >
-                            <Shield className="mr-2 h-4 w-4" />
-                            Make Editor
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleChangeRole(user.id, 1)}
-                          >
-                            <Shield className="mr-2 h-4 w-4" />
-                            Make User
-                          </DropdownMenuItem>
+                          {role === "admin" &&
+                            [
+                              { id: 2, label: "Admin" },
+                              { id: 3, label: "Editor" },
+                              { id: 1, label: "User" },
+                            ].map((r) => (
+                              <DropdownMenuItem
+                                key={r.id}
+                                onClick={() => handleChangeRole(user.id, r.id)}
+                              >
+                                <Shield className="mr-2 h-4 w-4" />
+                                Make {r.label}
+                              </DropdownMenuItem>
+                            ))}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
