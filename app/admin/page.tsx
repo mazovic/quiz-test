@@ -64,7 +64,7 @@ export default function UserPage() {
   const fetchUsers = useCallback(async () => {
     try {
       const { data } = await authAPI.authMe();
-      setRole(data.data.role.name);
+      setRole(data.role.name);
       const res = await userAPI.listUsers();
       setUsers(res.data.data);
     } catch (error) {
