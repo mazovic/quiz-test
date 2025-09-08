@@ -80,10 +80,6 @@ export default function NewQuizPage() {
       id: "hard",
       name: "Hard",
     },
-    {
-      id: "adaptive",
-      name: "Adaptive",
-    },
   ];
 
   const questionCounts = [5, 10, 15, 20];
